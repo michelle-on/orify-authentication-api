@@ -1,6 +1,6 @@
 # 🔐 Authentication API - OriFy
 
-API de autenticação moderna e simples.<br>
+API de autenticação.<br>
 **Stacks:** Ktor, MongoDB, Bcrypt
 
 ---
