@@ -9,9 +9,11 @@ import org.litote.kmongo.eq
 import org.litote.kmongo.or
 import org.litote.kmongo.coroutine.CoroutineCollection
 import at.favre.lib.crypto.bcrypt.BCrypt
+import io.github.cdimascio.dotenv.dotenv
 
 class UserService {
-    private val usersCollectionName: String = System.getenv("MONGODB_USERS_COLLECTION") ?: "users"
+    val dotenv = dotenv()
+    private val usersCollectionName: String = dotenv["MONGODB_USERS_COLLECTION"] ?: "users"
     private val users: CoroutineCollection<User> = MongoClientFactory.database.getCollection(usersCollectionName)
 
     suspend fun registerUser(email: String, username: String, password: String): RegisterResult {
@@ -37,5 +39,16 @@ class UserService {
 
         val result = BCrypt.verifyer().verify(password.toCharArray(), user.password)
         return if (result.verified) LoginResult.Success else LoginResult.InvalidCredentials
+    }
+
+    suspend fun deleteUserById(userId: String): Boolean {
+        val result = users.deleteOneById(ObjectId(userId))
+        return result.deletedCount > 0
+    }
+
+    suspend fun findByEmailOrUsername(identifier: String): User? {
+        return users.findOne(
+            or(User::email eq identifier, User::username eq identifier)
+        )
     }
 }

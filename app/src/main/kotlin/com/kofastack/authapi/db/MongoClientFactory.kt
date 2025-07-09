@@ -7,12 +7,15 @@ import com.mongodb.ServerApiVersion
 import org.litote.kmongo.coroutine.CoroutineClient
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
+import io.github.cdimascio.dotenv.dotenv
 
 object MongoClientFactory {
-    private val connectionString: String = System.getenv("MONGODB_CONNECTION_STRING")
+    val dotenv = dotenv()
+
+    private val connectionString: String = dotenv["MONGODB_CONNECTION_STRING"]
         ?: throw IllegalStateException("MONGODB_CONNECTION_STRING environment variable not set")
 
-    private val databaseAuthName: String = System.getenv("MONGODB_DATABASE_AUTH")
+    private val databaseAuthName: String = dotenv["MONGODB_DATABASE_AUTH"]
         ?: throw IllegalStateException("MONGODB_DATABASE_AUTH environment variable not set")
 
     private val settings = MongoClientSettings.builder()
