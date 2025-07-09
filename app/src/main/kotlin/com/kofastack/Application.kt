@@ -5,11 +5,13 @@ import com.kofastack.authapi.services.UserService
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import com.kofastack.authapi.plugins.configureAuthentication
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.routing.*
 
 fun Application.module() {
+    configureAuthentication()
     install(ContentNegotiation) {
         json()
     }

@@ -1,6 +1,7 @@
 package com.kofastack.authapi.routes
 
 import com.kofastack.authapi.services.UserService
+import com.kofastack.authapi.services.AuthService
 import com.kofastack.authapi.models.results.RegisterResult
 import com.kofastack.authapi.models.results.LoginResult
 import io.ktor.server.application.*
@@ -11,8 +12,12 @@ import io.ktor.http.HttpStatusCode
 import com.kofastack.authapi.models.validation.RegisterRequest
 import com.kofastack.authapi.models.validation.LoginRequest
 import kotlinx.serialization.Serializable
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 
 fun Route.authRoutes(userService: UserService) {
+    val authService = AuthService(userService)
+
     route("/register") {
         post {
             try {
@@ -37,12 +42,33 @@ fun Route.authRoutes(userService: UserService) {
         post {
             try {
                 val request = call.receive<LoginRequest>()
-                when (userService.loginUser(request.identifier, request.password)) {
-                    LoginResult.Success -> call.respondText("Login realizado com sucesso")
-                    LoginResult.InvalidCredentials -> call.respondText("Credenciais inválidas", status = HttpStatusCode.Unauthorized)
+                val token = authService.login(request.identifier, request.password)
+                if (token != null) {
+                    call.respond(mapOf("token" to token))
+                } else {
+                    call.respondText("Credenciais inválidas", status = HttpStatusCode.Unauthorized)
                 }
             } catch (e: Exception) {
                 call.respondText("Erro no servidor: ${e.message}", status = HttpStatusCode.InternalServerError)
+            }
+        }
+    }
+    
+    authenticate() {
+        delete("/user") {
+            val principal = call.principal<JWTPrincipal>()
+            val userId = principal?.getClaim("userId", String::class)
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, "Token inválido ou ausente")
+                return@delete
+            }
+
+            val deleted = userService.deleteUserById(userId)
+            if (deleted) {
+                call.respond(HttpStatusCode.OK, "Usuário deletado com sucesso")
+            } else {
+                call.respond(HttpStatusCode.NotFound, "Usuário não encontrado")
             }
         }
     }
